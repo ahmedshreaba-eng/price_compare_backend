@@ -79,9 +79,13 @@ app.post('/api/search-image', async (req, res) => {
       },
     });
 
+    const exactMatches = searchResponse.data.exact_matches || [];
     const visualMatches = searchResponse.data.visual_matches || [];
 
-    const formattedResults = visualMatches.slice(0, 15).map((item) => ({
+    // نفضّل النتائج المطابقة فعلياً، ولو مفيش نرجع للنتائج الشبيهة بصرياً
+    const matches = exactMatches.length > 0 ? exactMatches : visualMatches;
+
+    const formattedResults = matches.slice(0, 15).map((item) => ({
       title: item.title,
       price: item.price?.value || 'السعر غير متاح',
       source: item.source,
