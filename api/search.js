@@ -128,8 +128,8 @@ app.get('/api/product-link', async (req, res) => {
 
     res.json({ link: directLink });
   } catch (error) {
-    console.error('Product Link Error:', error.message);
-    res.status(500).json({ error: 'تعذر جلب الرابط المباشر' });
+    console.error('Product Link Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'تعذر جلب الرابط المباشر', details: error.response?.data });
   }
 });
 // Endpoint تجريبي للتأكد إن السيرفر شغال
