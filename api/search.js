@@ -115,15 +115,15 @@ app.get('/api/product-link', async (req, res) => {
   try {
     const response = await axios.get('https://serpapi.com/search.json', {
       params: {
-        engine: 'google_product',
-        product_id: productId,
+        engine: 'google_immersive_product',
+        page_token: productId,
         api_key: SERPAPI_KEY,
         gl: 'ae',
         hl: 'ar',
       },
     });
 
-    const sellers = response.data.sellers_results?.online_sellers || [];
+    const sellers = response.data.sellers_results || response.data.online_sellers || [];
     const directLink = sellers.length > 0 ? sellers[0].link : null;
 
     res.json({ link: directLink });
