@@ -36,7 +36,7 @@ app.get('/api/search', async (req, res) => {
       title: item.title,
       price: item.price,
       source: item.source,
-      link: item.link,
+      link: item.product_link || item.link || item.serpapi_product_api || null,
       thumbnail: item.thumbnail,
       rating: item.rating || null,
     }));
