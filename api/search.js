@@ -1,0 +1,64 @@
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// مفتاح SerpApi - هنحطه بشكل آمن بعدين، دلوقتي بس للتجربة
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
+
+// Endpoint البحث الرئيسي
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q; // اسم المنتج أو الباركود
+
+  if (!query) {
+    return res.status(400).json({ error: 'الرجاء إدخال اسم المنتج أو الباركود' });
+  }
+
+  try {
+    const response = await axios.get('https://serpapi.com/search.json', {
+      params: {
+        engine: 'google_shopping',
+        q: query,
+        api_key: SERPAPI_KEY,
+        gl: 'ae', // نتائج مخصصة للإمارات
+        hl: 'ar',
+      },
+    });
+
+    const results = response.data.shopping_results || [];
+
+    // تنظيم النتائج بشكل مبسط للتطبيق
+    const formattedResults = results.slice(0, 15).map((item) => ({
+      title: item.title,
+      price: item.price,
+      source: item.source,
+      link: item.link,
+      thumbnail: item.thumbnail,
+      rating: item.rating || null,
+    }));
+
+    res.json({
+      query: query,
+      count: formattedResults.length,
+      results: formattedResults,
+    });
+  } catch (error) {
+    console.error('SerpApi Error:', error.message);
+    res.status(500).json({ error: 'حدث خطأ أثناء البحث، حاول مرة أخرى' });
+  }
+});
+
+// Endpoint تجريبي للتأكد إن السيرفر شغال
+app.get('/', (req, res) => {
+  res.json({ status: 'السيرفر شغال بنجاح ✅' });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`السيرفر شغال على البورت ${PORT}`);
+});
+
+module.exports = app;
