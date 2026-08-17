@@ -8,6 +8,7 @@ app.use(express.json());
 
 // مفتاح SerpApi - هنحطه بشكل آمن بعدين، دلوقتي بس للتجربة
 const SERPAPI_KEY = process.env.SERPAPI_KEY;
+const IMGBB_KEY = process.env.IMGBB_KEY;
 
 // Endpoint البحث الرئيسي
 app.get('/api/search', async (req, res) => {
@@ -50,7 +51,54 @@ app.get('/api/search', async (req, res) => {
     res.status(500).json({ error: 'حدث خطأ أثناء البحث، حاول مرة أخرى' });
   }
 });
+// Endpoint البحث بالصورة
+app.post('/api/search-image', async (req, res) => {
+  const { imageBase64 } = req.body;
 
+  if (!imageBase64) {
+    return res.status(400).json({ error: 'الرجاء إرسال صورة' });
+  }
+
+  try {
+    // الخطوة 1: رفع الصورة على imgbb للحصول على رابط
+    const uploadResponse = await axios.post(
+      `https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`,
+      new URLSearchParams({ image: imageBase64 }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    const imageUrl = uploadResponse.data.data.url;
+
+    // الخطوة 2: البحث بالصورة عن طريق Google Lens في SerpApi
+    const searchResponse = await axios.get('https://serpapi.com/search.json', {
+      params: {
+        engine: 'google_lens',
+        url: imageUrl,
+        api_key: SERPAPI_KEY,
+        hl: 'ar',
+      },
+    });
+
+    const visualMatches = searchResponse.data.visual_matches || [];
+
+    const formattedResults = visualMatches.slice(0, 15).map((item) => ({
+      title: item.title,
+      price: item.price?.value || 'السعر غير متاح',
+      source: item.source,
+      link: item.link,
+      thumbnail: item.thumbnail,
+      rating: null,
+    }));
+
+    res.json({
+      count: formattedResults.length,
+      results: formattedResults,
+    });
+  } catch (error) {
+    console.error('Image Search Error:', error.message);
+    res.status(500).json({ error: 'حدث خطأ أثناء البحث بالصورة، حاول مرة أخرى' });
+  }
+});
 // Endpoint تجريبي للتأكد إن السيرفر شغال
 app.get('/', (req, res) => {
   res.json({ status: 'السيرفر شغال بنجاح ✅' });
