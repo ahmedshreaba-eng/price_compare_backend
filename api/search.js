@@ -36,7 +36,8 @@ app.get('/api/search', async (req, res) => {
       title: item.title,
       price: item.price,
       source: item.source,
-      link: item.product_link || item.link || item.serpapi_product_api || null,
+      link: item.product_link || item.link || null,
+      productId: item.product_id || null,
       thumbnail: item.thumbnail,
       rating: item.rating || null,
     }));
@@ -101,6 +102,34 @@ app.post('/api/search-image', async (req, res) => {
   } catch (error) {
     console.error('Image Search Error:', error.message);
     res.status(500).json({ error: 'حدث خطأ أثناء البحث بالصورة، حاول مرة أخرى' });
+  }
+});
+// Endpoint لجلب الرابط المباشر للمتجر
+app.get('/api/product-link', async (req, res) => {
+  const productId = req.query.id;
+
+  if (!productId) {
+    return res.status(400).json({ error: 'معرف المنتج مطلوب' });
+  }
+
+  try {
+    const response = await axios.get('https://serpapi.com/search.json', {
+      params: {
+        engine: 'google_product',
+        product_id: productId,
+        api_key: SERPAPI_KEY,
+        gl: 'ae',
+        hl: 'ar',
+      },
+    });
+
+    const sellers = response.data.sellers_results?.online_sellers || [];
+    const directLink = sellers.length > 0 ? sellers[0].link : null;
+
+    res.json({ link: directLink });
+  } catch (error) {
+    console.error('Product Link Error:', error.message);
+    res.status(500).json({ error: 'تعذر جلب الرابط المباشر' });
   }
 });
 // Endpoint تجريبي للتأكد إن السيرفر شغال
